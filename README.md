@@ -11,4 +11,7 @@ Python2.7
 
 Notes
 ===========
-BDD is much harded and messy than I thought.
+BDD is much harder and messy than I thought.
+Should uses classes, too many functions/variables, too long
+Sepearte functions from test in future.
+
