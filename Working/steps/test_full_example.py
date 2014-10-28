@@ -9,8 +9,8 @@ import re
 import json
 from QuadParser import parseGTF, parseQuadOut
 from behave import *
-from convertWithTranscript import compareTranscriptGenome, writeBedFormat
-from convertGenomicLoc import convertGenomicLoc
+from test_convert_genomic import compareTranscriptGenome, writeBedFormat
+from test_genomic_modifier import convertGenomicLoc
 __author__ = 'quek'
 
 
