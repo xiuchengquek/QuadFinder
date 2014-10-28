@@ -11,9 +11,15 @@ import json
 
 from behave import *
 
+
+
+
+tc = unittest.TestCase('__init__')
+tc.maxDiff = None
+
 def findBetween(transcript_pos, genomic_exon):
     """
-    Given a transcript position and a list of exons. find which exon the transcrtip fails in 
+    Given a transcript position and a list of exons. find which exon the transcrtip fails in
     :param transcript_pos:
     :param genomic_exon:
     :return:
@@ -62,11 +68,12 @@ def rebuild_coordinates(exons, relative_end, feature_name, genomic_info):
 
 def remap(genomic_info, transcript_feature):
     """
+    Function that maps transcript coordinates to its genomic coordinates.
     :param genomic_info: a dictionary that contains position and the strand, ie
                     { 'position' : xxx,
                       'strand'  : + or 1 }
     :param transcript: a dictinoary that contains a transcript feature and its length and its starting postion
-    :return:
+    :return: return a dictioanry containing transcript features mapped with its corresponding genomic coordinates
     """
 
 
@@ -86,13 +93,48 @@ def remap(genomic_info, transcript_feature):
     return return_dict
 
 
-def compareTranscriptGenoem(genomic, transcript):
+def compareTranscriptGenome(genomic, transcript):
+    """
+    Loop thru the feautres and feed them into function remap
+    :param genomic: Genomic coordinates and its exons for a given gene
+    :param transcript: Transcript features with coordiantes relative to transcript start site
+    :return: Genomic coordiantes for given transcript start site.
+    """
     return_dict = {}
     for transcript_name, feature in transcript.iteritems():
-        genomic_info = genomic[transcript_name]
+        try:
+            genomic_info = genomic[transcript_name]
+        except KeyError,e:
+            print >> sys.stdout, e
+            continue
         return_dict.update(remap(genomic_info, feature))
 
+
     return return_dict
+
+
+def writeBedFormat(genomic_features):
+    """
+    Convert genomic features dictioanry from remap and compare transcript genome into bed foramt
+    :param genomic_features:
+    :return: bedformat of genomic features
+    """
+    return_list = []
+    for feature_name, feature_info in genomic_features.iteritems():
+        return_list.append(
+
+            "\t".join(map(str, ['chr%s' % feature_info['chr'],
+             feature_info['start'] - 1,
+             feature_info['end'],
+             feature_name,
+             0,
+             feature_info['strand']
+            ]))
+
+        )
+
+    return return_list
+
 
 @given('Transcript feature')
 def step_impl(context):
@@ -106,12 +148,19 @@ def step_impl(context):
 
 @then("the genomic feature for the transcript should be")
 def step_impl(context):
-    tc = unittest.TestCase('__init__')
-    tc.maxDiff = None
-    results_info =  json.loads(context.text)
-    results_dict = compareTranscriptGenoem(context.genomic_feature, context.transcript_feature )
-    tc.assertDictEqual(results_info, results_dict)
 
+    results_info =  json.loads(context.text)
+    results_dict = compareTranscriptGenome(context.genomic_feature, context.transcript_feature )
+    tc.assertDictEqual(results_info, results_dict)
+    context.results = results_dict
+
+@then("the bedformat out but unordered")
+def step_impl(context):
+    mock_results = context.text
+    genomic_features = context.results
+    bed_out = writeBedFormat(genomic_features)
+    mock_results = mock_results.split('\n')
+    tc.assertItemsEqual(bed_out, mock_results)
 
 
 
