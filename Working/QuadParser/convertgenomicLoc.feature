@@ -1,9 +1,7 @@
-
-Feature: join exons from genome to give transcript location
-
+Feature: Convert genomic co-coordinates of exons into transcripts-level coordinates
 
 
-Scenario: for a given list of exon join them up
+Scenario: for a given list of exon with genomic coordinates join them up
 	Given a list that looks like this
 	| start | end |
 	| 11	| 20  |
@@ -14,7 +12,7 @@ Scenario: for a given list of exon join them up
 	| 31      | 40    | 11      | 20    |
 
 
-Scenario: Positive strand
+Scenario: Now with prepare strand information, start, end and chromosome
     Given A genome annotation file
     | transcript_name  | chr |     exon | start | end | strand |
     | TestA            | 1   |     1    |  11   | 20  | +      |

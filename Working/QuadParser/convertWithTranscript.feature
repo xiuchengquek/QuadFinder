@@ -1,7 +1,6 @@
-
 Feature: Convert Transcript features to Genomic Features with exon
 
-Scenario:  Convert Transcript features to Genomic Features with exon - Positive Strand only
+Scenario:  Convert Transcript features coordinates to Genomic level coordiantes - Positive Strand only
     Given Transcript feature
     | transcript_name  | transcript_feature | length | position |
     | TestA            | TestA-1            |   15   |    0     |
@@ -52,7 +51,7 @@ Scenario:  Convert Transcript features to Genomic Features with exon - Positive 
 
 
 
-Scenario:  Convert Transcript features to Genomic Features with exon - both Strand
+Scenario:  Convert Transcript features coordinates to Genomic level coordiantes - both Strand
     Given Transcript feature
     | transcript_name  | transcript_feature | length | position |
     | TestA            | TestA-1            |   15   |    0     |
@@ -124,7 +123,7 @@ Scenario:  Convert Transcript features to Genomic Features with exon - both Stra
         }
     """
 
-Scenario:  Convert Transcript features to Genomic Features with exon - cross 3 exons for negative
+Scenario:  C Convert Transcript features coordinates to Genomic level coordiantes - cross 3 exons for negative
     Given Transcript feature
     | transcript_name  | transcript_feature | length | position |
     | TestA            | TestA-1            |   15   |    0     |
@@ -203,7 +202,7 @@ Scenario:  Convert Transcript features to Genomic Features with exon - cross 3 e
         }
     """
 
-Scenario:  Convert Transcript features to Genomic Features with exon - cross 3 exons for negative, multiple features
+Scenario:  Convert Transcript features coordinates to Genomic level coordiantes - cross 3 exons for negative, multiple features
     Given Transcript feature
     | transcript_name  | transcript_feature | length | position |
     | TestA            | TestA-1            |   15   |    0     |
