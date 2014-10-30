@@ -21,7 +21,7 @@ Scenario:  Convert Transcript features coordinates to Genomic level coordiantes 
     | TestA            | 1   | 2     |  31           | 40          | +      |11              | 20             |
     """
      {
-           "TestA"  : {"chr" : 1,
+           "TestA"  : {"chr" : "1",
                        "strand" : "+",
                        "exons" : [
             {"g_start": 11 ,"g_end": 20, "t_start" : 1, "t_end" : 10},
@@ -41,9 +41,9 @@ Scenario:  Convert Transcript features coordinates to Genomic level coordiantes 
     """
     {
            "TestA-1-1"  :
-                { "chr" : 1, "start" : 11, "end" : 20, "strand" : "+"},
+                { "chr" : "1", "start" : 11, "end" : 20, "strand" : "+"},
             "TestA-1-2"  :
-                { "chr" : 1, "start" : 31, "end" : 35, "strand" : "+"}
+                { "chr" : "1", "start" : 31, "end" : 35, "strand" : "+"}
         }
     """
 

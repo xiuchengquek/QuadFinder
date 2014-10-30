@@ -1,6 +1,5 @@
 from __future__ import unicode_literals
 
-from behave import *
 import unittest
 import sys
 
@@ -8,47 +7,93 @@ import StringIO
 import re
 import json
 
+import argparse
+
 __author__ = 'quek'
 
 
-def remap(genomic, transcript):
+def findBetween(transcript_pos, genomic_exon):
     """
-    :param genomic: a dictionary that contains position and the strand, ie
-                    { 'position' : xxx,
-                      'strand'  : + or 1 }
-    :param transcript: a dictinoary that contains a transcript feature and its length
+    Given a transcript position and a list of exons. find which exon the transcrtip fails in
+    :param transcript_pos:
+    :param genomic_exon:
     :return:
     """
-    if genomic['strand'] == "+":
-        genomic_start = int(genomic['position']) + int(transcript['position'])
-        genomic_end = genomic_start + int(transcript['length']) - 1
-    elif genomic['strand'] == "-":
-        genomic_end = int(genomic['position']) - int(transcript['position'])
-        genomic_start = (genomic_end - int(transcript['length'])) + 1
-    return {'start': genomic_start, 'end': genomic_end}
+    for index, value in enumerate(genomic_exon):
+        if value['t_start'] <=  transcript_pos  and value['t_end'] >= transcript_pos:
+            relative_end = transcript_pos - value['t_start']
+            return {'index' : index, 'relative_end' : relative_end }
+
+def remap(genomic_info, transcript_feature):
+    """
+    Function that maps transcript coordinates to its genomic coordinates.
+    :param genomic_info: a dictionary that contains position and the strand, ie
+                    { 'position' : xxx,
+                      'strand'  : + or 1 }
+    :param transcript: a dictinoary that contains a transcript feature and its length and its starting postion
+    :return: return a dictioanry containing transcript features mapped with its corresponding genomic coordinates
+    """
+
+
+    return_dict = {}
+    exons  = genomic_info['exons']
+    if genomic_info['strand'] == '-':
+        exons = [x for x in reversed(exons)]
+
+    for features_name, features_info in transcript_feature.iteritems():
+        transcript_start = int(features_info['position'] + 1)
+        transcript_end = int(features_info['position']) + int(features_info['length'])
+        first_exon = findBetween(transcript_start, exons)
+        last_exon = findBetween(transcript_end, exons)
+        subset_exons = exons[first_exon['index']:last_exon['index']+1]
+        genome_coordinates = rebuild_coordinates(subset_exons, last_exon['relative_end'], features_name, genomic_info)
+        return_dict.update(genome_coordinates)
+    return return_dict
 
 
 def parseGTF(file):
     getTranscriptID = re.compile('transcript_id "(.*)"; gene_type')
     exon_info = {}
     with open(file, 'r') as f:
-        for line in f:
-            fields = line.split('\t')
-            if fields[2].startswith('exon'):
-                transcript_id = getTranscriptID.search(fields[8]).group(1)
-                if transcript_id not in exon_info:
-                    if 'chr' in fields[0]:
-                        fields[0] = fields[0].replace('chr', '')
-                    exon_info[transcript_id] = {'chr': int(fields[0]),
-                                                'strand': fields[6],
-                                                'exons': []}
 
-                exon_info[transcript_id]['exons'].append({
-                    'start': int(fields[3]),
-                    'end': int(fields[4])
-                })
+        for line in f:
+            if not line.startswith('#'):
+                fields = line.split('\t')
+                if fields[2].startswith('exon'):
+                    transcript_id = getTranscriptID.search(fields[8]).group(1)
+                    if transcript_id not in exon_info:
+                        if 'chr' in fields[0]:
+                            fields[0] = fields[0].replace("chr", "")
+                        exon_info[transcript_id] = {'chr': fields[0],
+                                                    'strand': fields[6],
+                                                    'exons': []}
+
+                    exon_info[transcript_id]['exons'].append({
+                        'start': int(fields[3]),
+                        'end': int(fields[4])
+                    })
 
     return exon_info
+
+
+def compareTranscriptGenome(genomic, transcript):
+    """
+    Loop thru the feautres and feed them into function remap
+    :param genomic: Genomic coordinates and its exons for a given gene
+    :param transcript: Transcript features with coordiantes relative to transcript start site
+    :return: Genomic coordiantes for given transcript start site.
+    """
+    return_dict = {}
+    for transcript_name, feature in transcript.iteritems():
+        try:
+            genomic_info = genomic[transcript_name]
+        except KeyError,e:
+            print >> sys.stdout, e
+            continue
+        return_dict.update(remap(genomic_info, feature))
+
+
+    return return_dict
 
 
 def parseQuadOut(file):
@@ -70,6 +115,43 @@ def parseQuadOut(file):
                                                          'length': int(fields[4])}
 
     return feature_info
+
+
+def rebuild_coordinates(exons, relative_end, feature_name, genomic_info):
+    """
+    Build output for bed file
+    :param exons: list of subsetted exons
+    :param relative_end: end point to the start of exon (transcript)
+    :param feature_name: name of feature (transcript)
+    :param genomic_info: genomic_info , dictionary carrying all genomic feature
+    :return:
+    """
+    exon_counts = len(exons)
+    return_dict = {}
+    for index, x in enumerate(exons):
+        current_exon = index + 1
+        name = "%s-%s" % (feature_name, current_exon)
+        if current_exon == exon_counts :
+            if genomic_info['strand'] == '+' :
+                genomic_start = x['g_start']
+                genomic_end = x['g_start'] + relative_end
+            else:
+                genomic_start = x['g_end'] - relative_end
+                genomic_end = x['g_end']
+            return_dict[name] = {
+                'start'  : genomic_start,
+                'end' : genomic_end,
+                'strand' : genomic_info['strand'],
+                'chr' : genomic_info['chr']
+            }
+        else:
+            return_dict[name] = {
+                'start'  : x['g_start'],
+                'end' :  x['g_end'],
+                'strand' : genomic_info['strand'],
+                'chr' : genomic_info['chr']
+            }
+    return return_dict
 
 
 def exons_loop(exons, strandness=None):
@@ -113,4 +195,44 @@ def convertGenomicLoc(genomic_annotation):
         genomic_annotation[keys]["exons"] = exons_loop(value['exons'], value['strand'])
     return genomic_annotation
 
+
+def writeBedFormat(genomic_features):
+    """
+    Convert genomic features dictioanry from remap and compare transcript genome into bed foramt
+    :param genomic_features:
+    :return: bedformat of genomic features
+    """
+    return_list = []
+    for feature_name, feature_info in genomic_features.iteritems():
+        return_list.append(
+
+            "\t".join(map(str, ['chr%s' % feature_info['chr'],
+                                feature_info['start'] - 1,
+                                feature_info['end'],
+                                feature_name,
+                                0,
+                                feature_info['strand']
+            ]))
+
+        )
+
+    return return_list
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Convert Trascript Feature from QuadPraser to Genomic Feature')
+    parser.add_argument('-i','--input', help='QuadParserOut', required=True)
+    parser.add_argument('-g','--gtf', help='GTF File', required=True)
+    parser.add_argument('-o','--out', help='output', required=True)
+
+    args = vars(parser.parse_args())
+
+    gtf_dict = parseGTF(args['gtf'])
+    gtf_dict = convertGenomicLoc(gtf_dict)
+    transcript_dict = parseQuadOut(args['input'])
+    mapped_reads = compareTranscriptGenome(gtf_dict, transcript_dict)
+    results = writeBedFormat(mapped_reads)
+    with open(args['out'], 'w') as f :
+        for line in results:
+            f.write("%s\n" % line)
 

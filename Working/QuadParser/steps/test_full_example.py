@@ -7,10 +7,8 @@ import sys
 import StringIO
 import re
 import json
-from QuadParser import parseGTF, parseQuadOut
+from QuadParser import parseGTF, parseQuadOut, compareTranscriptGenome, writeBedFormat, convertGenomicLoc
 from behave import *
-from test_convert_genomic import compareTranscriptGenome, writeBedFormat
-from test_genomic_modifier import convertGenomicLoc
 __author__ = 'quek'
 
 
@@ -32,6 +30,8 @@ def step_impl(context, mock_quad):
 @then('the output of will be a bed file that is 0 base')
 def step_impl(context):
     gtf_dict = parseGTF(context.mock_gtf)
+    print >> sys.stdout, gtf_dict
+
     gtf_dict = convertGenomicLoc(gtf_dict)
     transcript_dict = parseQuadOut(context.mock_quad)
     mapped_reads = compareTranscriptGenome(gtf_dict, transcript_dict)

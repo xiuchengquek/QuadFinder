@@ -28,6 +28,7 @@ def step_impl(context):
     tc.assertDictEqual(mock_results, parseGTF(context.gtf))
 
 
+
 @given(u'output file : "{QUADOUT}"')
 def step_impl(context, QUADOUT):
     with open(QUADOUT, 'w+') as f:

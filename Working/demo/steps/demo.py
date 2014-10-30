@@ -1,5 +1,5 @@
-__author__ = 'quek'
 from __future__ import unicode_literals
+__author__ = 'quek'
 
 from behave import *
 import unittest
@@ -53,3 +53,4 @@ def step_impl(context):
                              context.transcript_info[0])
 
         tc.assertDictEqual(mock_info, feature_info)
+

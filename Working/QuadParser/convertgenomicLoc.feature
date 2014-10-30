@@ -19,17 +19,25 @@ Scenario: Now with prepare strand information, start, end and chromosome
     | TestA            | 1   |     2    |  31   | 40  | +      |
     | TestB            | 1   |     1    |  11   | 20  | -      |
     | TestB            | 1   |     2    |  31   | 40  | -      |
-    """
+    | TestC            | X   |     1    |  11   | 20  | +      |
+    | TestC            | X   |     1    |  31   | 40  | +      |
+"""
         {
-         "TestA" : { "chr" :  1, "strand" : "+" ,
+         "TestA" : { "chr" :  "1", "strand" : "+" ,
                "exons" : [
                         { "start" : 11, "end" : 20 },
                         { "start" : 31, "end" : 40 }]
              },
-         "TestB" : { "chr" :  1, "strand" : "-" , "exons" : [
+         "TestB" : { "chr" :  "1", "strand" : "-" , "exons" : [
                                            { "start" : 11, "end" : 20 },
                                            { "start" : 31, "end" : 40 }]
-                                       }
+                                       },
+         "TestC" : { "chr" :  "X", "strand" : "+" ,
+               "exons" : [
+                        { "start" : 11, "end" : 20 },
+                        { "start" : 31, "end" : 40 }]
+             }
+
        }
     """
     Then the genomic feature at transcript level will be
@@ -38,9 +46,11 @@ Scenario: Now with prepare strand information, start, end and chromosome
     | TestA            | 1   | 2    |  31           | 40          | +      |11              | 20             |
     | TestB            | 1   | 1    |  11           | 20          | -      |11              | 20             |
     | TestB            | 1   | 2    |  31           | 40          | -      |1               | 10             |
-    """
+    | TestC            | X   | 1    |  11           | 20          | +      |1               | 10             |
+    | TestC            | X   | 2    |  31           | 40          | +      |11              | 20             |
+"""
      {
-           "TestA"  : {"chr" : 1,
+           "TestA"  : {"chr" : "1",
                        "strand" : "+",
                        "exons" : [
             {"g_start": 11 ,"g_end": 20, "t_start" : 1, "t_end" : 10},
@@ -49,14 +59,22 @@ Scenario: Now with prepare strand information, start, end and chromosome
            ]
            },
 
-           "TestB"  : {"chr" : 1,
+           "TestB"  : {"chr" : "1",
                "strand" : "-",
                "exons" : [
                {"g_start": 11 ,"g_end": 20, "t_start" : 11, "t_end" : 20},
                {"g_start": 31 ,"g_end": 40, "t_start" : 1, "t_end" : 10}
 
                ]
-    }
+           },
+          "TestC"  :   {"chr" : "X",
+                       "strand" : "+",
+                       "exons" : [
+            {"g_start": 11 ,"g_end": 20, "t_start" : 1, "t_end" : 10},
+            {"g_start": 31 ,"g_end": 40, "t_start" : 11, "t_end" : 20}
+
+           ]
+           }
 
 
      }
