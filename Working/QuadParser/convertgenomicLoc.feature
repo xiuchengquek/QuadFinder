@@ -45,7 +45,7 @@ Scenario: Now with prepare strand information, start, end and chromosome
     | TestA            | 1   | 1    |  11           | 20          | +      |1               | 10             |
     | TestA            | 1   | 2    |  31           | 40          | +      |11              | 20             |
     | TestB            | 1   | 1    |  11           | 20          | -      |11              | 20             |
-    | TestB            | 1   | 2    |  31           | 40          | -      |1               | 10             |
+    | TestB            | 1   |2    |  31           | 40          | -      |1               | 10             |
     | TestC            | X   | 1    |  11           | 20          | +      |1               | 10             |
     | TestC            | X   | 2    |  31           | 40          | +      |11              | 20             |
 """

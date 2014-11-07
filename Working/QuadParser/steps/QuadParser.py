@@ -12,44 +12,26 @@ import argparse
 __author__ = 'quek'
 
 
-def findBetween(transcript_pos, genomic_exon):
-    """
-    Given a transcript position and a list of exons. find which exon the transcrtip fails in
-    :param transcript_pos:
-    :param genomic_exon:
-    :return:
-    """
-    for index, value in enumerate(genomic_exon):
-        if value['t_start'] <=  transcript_pos  and value['t_end'] >= transcript_pos:
-            relative_end = transcript_pos - value['t_start']
-            return {'index' : index, 'relative_end' : relative_end }
 
-def remap(genomic_info, transcript_feature):
-    """
-    Function that maps transcript coordinates to its genomic coordinates.
-    :param genomic_info: a dictionary that contains position and the strand, ie
-                    { 'position' : xxx,
-                      'strand'  : + or 1 }
-    :param transcript: a dictinoary that contains a transcript feature and its length and its starting postion
-    :return: return a dictioanry containing transcript features mapped with its corresponding genomic coordinates
-    """
+def parseQuadOut(file):
+    re_transcript = re.compile('^([\w.]+)')
 
+    feature_info = {}
+    with open(file, 'r') as f:
+        for index, line in enumerate(f):
+            fields = line.split('\t')
+            transcript_id = re_transcript.match(fields[0]).group(0)
+            if transcript_id in feature_info:
+                feature_number = len(feature_info[transcript_id]) + 1
+            else:
+                feature_number = 1
+                feature_info[transcript_id] = {}
 
-    return_dict = {}
-    exons  = genomic_info['exons']
-    if genomic_info['strand'] == '-':
-        exons = [x for x in reversed(exons)]
+            feature_name = "%s-%s" % (transcript_id, feature_number)
+            feature_info[transcript_id][feature_name] = {'position': int(fields[1]),
+                                                         'length': int(fields[4])}
 
-    for features_name, features_info in transcript_feature.iteritems():
-        transcript_start = int(features_info['position'] + 1)
-        transcript_end = int(features_info['position']) + int(features_info['length'])
-        first_exon = findBetween(transcript_start, exons)
-        last_exon = findBetween(transcript_end, exons)
-        subset_exons = exons[first_exon['index']:last_exon['index']+1]
-        genome_coordinates = rebuild_coordinates(subset_exons, last_exon['relative_end'], features_name, genomic_info)
-        return_dict.update(genome_coordinates)
-    return return_dict
-
+    return feature_info
 
 def parseGTF(file):
     getTranscriptID = re.compile('transcript_id "(.*)"; gene_type')
@@ -75,6 +57,47 @@ def parseGTF(file):
 
     return exon_info
 
+def findBetween(transcript_pos, genomic_exon):
+    """
+    Given a transcript position and a list of exons. find which exon the transcrtip fails in
+    :param transcript_pos:
+    :param genomic_exon:
+    :return:
+    """
+    for index, value in enumerate(genomic_exon):
+        if int(value['t_start']) <=  int(transcript_pos)  and int(value['t_end']) >= int(transcript_pos):
+            relative_start = transcript_pos - value['t_start']
+            return {'index' : index, 'relative_start' : relative_start }
+
+def remap(genomic_info, transcript_feature):
+    """
+    Function that maps transcript coordinates to its genomic coordinates.
+    :param genomic_info: a dictionary that contains position and the strand, ie
+                    { 'position' : xxx,
+                      'strand'  : + or 1 }
+    :param transcript: a dictinoary that contains a transcript feature and its length and its starting postion
+    :return: return a dictioanry containing transcript features mapped with its corresponding genomic coordinates
+    """
+
+
+    return_dict = {}
+    exons  = genomic_info['exons']
+    if genomic_info['strand'] == '-':
+        exons = [x for x in reversed(exons)]
+
+    for features_name, features_info in transcript_feature.iteritems():
+        transcript_start = int(features_info['position'] + 1)
+        transcript_end = int(features_info['position']) + int(features_info['length'])
+        first_exon = findBetween(transcript_start, exons)
+        last_exon = findBetween(transcript_end, exons)
+        subset_exons = exons[first_exon['index']:last_exon['index']+1]
+        genome_coordinates = rebuild_coordinates(subset_exons, first_exon,  last_exon, features_name, genomic_info)
+        return_dict.update(genome_coordinates)
+    return return_dict
+
+
+
+
 
 def compareTranscriptGenome(genomic, transcript):
     """
@@ -96,62 +119,53 @@ def compareTranscriptGenome(genomic, transcript):
     return return_dict
 
 
-def parseQuadOut(file):
-    re_transcript = re.compile('^([\w.]+)')
 
-    feature_info = {}
-    with open(file, 'r') as f:
-        for index, line in enumerate(f):
-            fields = line.split('\t')
-            transcript_id = re_transcript.match(fields[0]).group(0)
-            if transcript_id in feature_info:
-                feature_number = len(feature_info[transcript_id]) + 1
-            else:
-                feature_number = 1
-                feature_info[transcript_id] = {}
-
-            feature_name = "%s-%s" % (transcript_id, feature_number)
-            feature_info[transcript_id][feature_name] = {'position': int(fields[1]),
-                                                         'length': int(fields[4])}
-
-    return feature_info
-
-
-def rebuild_coordinates(exons, relative_end, feature_name, genomic_info):
+def rebuild_coordinates(exons, start_exon,  last_exon, feature_name, genomic_info):
     """
     Build output for bed file
     :param exons: list of subsetted exons
-    :param relative_end: end point to the start of exon (transcript)
+    :param start_exon :  information of the start exon, namly the index ( which is the exon number)
+    :param last_exon : infromation of the last exon
     :param feature_name: name of feature (transcript)
     :param genomic_info: genomic_info , dictionary carrying all genomic feature
     :return:
     """
     exon_counts = len(exons)
     return_dict = {}
+    print >> sys.stdout, exons, last_exon, start_exon
+    ## determien if start and end are the same if same them take their cooridinates between their relative_start
+    start_exon_no = start_exon['index']
+    last_exon_no = last_exon['index']
     for index, x in enumerate(exons):
-        current_exon = index + 1
-        name = "%s-%s" % (feature_name, current_exon)
-        if current_exon == exon_counts :
-            if genomic_info['strand'] == '+' :
-                genomic_start = x['g_start']
-                genomic_end = x['g_start'] + relative_end
-            else:
-                genomic_start = x['g_end'] - relative_end
-                genomic_end = x['g_end']
-            return_dict[name] = {
-                'start'  : genomic_start,
-                'end' : genomic_end,
-                'strand' : genomic_info['strand'],
-                'chr' : genomic_info['chr']
-            }
+        name = "%s-%s" % (feature_name, index + 1)
+
+
+        if genomic_info['strand'] == '+':
+            genomic_start = x['g_start']
+            genomic_end = x['g_end']
+            if index == start_exon_no:
+                genomic_start = start_exon['relative_start'] + x['g_start']
+            if index == last_exon_no:
+                genomic_end =  last_exon['relative_start'] + x['g_start']
         else:
-            return_dict[name] = {
-                'start'  : x['g_start'],
-                'end' :  x['g_end'],
-                'strand' : genomic_info['strand'],
-                'chr' : genomic_info['chr']
-            }
+            genomic_start = x['g_start']
+            genomic_end = x['g_end']
+
+            if index == start_exon_no:
+                genomic_end =  x['g_end'] - start_exon['relative_start']
+            if index == last_exon_no:
+                genomic_start = x['g_end'] -  last_exon['relative_start']
+
+
+
+        return_dict[name] = {
+            'start'  : genomic_start,
+            'end' :  genomic_end,
+            'strand' : genomic_info['strand'],
+            'chr' : genomic_info['chr']
+        }
     return return_dict
+
 
 
 def exons_loop(exons, strandness=None):

@@ -33,7 +33,7 @@ Scenario: If matching transcript is not found
     And a Different QuadParser file "mock_files/Quad.out" which has 0 based coordaintes
       """
       ENST000005152422222.2 gene=ARF5 CDS=155-695	0	15	ENST00000515242.2 gene=ARF5 CDS=155-695_1008_1045_for	15	+	GGGGCCAGGTTGGGAGGGGGAAGGTGAGGGCTTCGGG
-      """
+"""
 	Then there will no results
 
 
